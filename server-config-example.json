@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "mcp-windbg": {
+      "command": "node",
+      "args": ["build/index.js"],
+      "description": "Windows debugging tools using WinDbg/CDB for crash dump analysis and live debugging"
+    }
+  }
+}

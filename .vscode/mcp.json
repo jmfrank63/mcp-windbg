@@ -1,15 +1,14 @@
 {
     "servers": {
-        "mcp_windbg": {
+        "mcp-windbg": {
             "type": "stdio",
-            "command": "${workspaceFolder}/.venv/Scripts/python",
+            "command": "node",
             "args": [
-                "-m",
-                "mcp_windbg"
+                "${workspaceFolder}/build/index.js"
             ],
             "env": {
-                "_NT_SYMBOL_PATH": "SRV*C:\\Symbols*https://msdl.microsoft.com/download/symbols;${workspaceFolder}\\build\\out"
+                "_NT_SYMBOL_PATH": "SRV*C:\\Symbols*https://msdl.microsoft.com/download/symbols"
             }
-        },
+        }
     }
 }

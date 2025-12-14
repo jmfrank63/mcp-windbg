@@ -14,7 +14,7 @@ An AI-powered tool that bridges LLMs with WinDbg for crash dump analysis and liv
 
 ## What This is Not
 
-Not a magical auto-fix solution. It's a Python wrapper around CDB that leverages LLM knowledge to assist with debugging.
+Not a magical auto-fix solution. It's a Node.js/TypeScript wrapper around CDB that leverages LLM knowledge to assist with debugging.
 
 ## Usage Modes
 
@@ -27,7 +27,7 @@ Not a magical auto-fix solution. It's a Python wrapper around CDB that leverages
 
 ### Prerequisites
 - Windows with [Debugging Tools for Windows](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/) or [WinDbg from Microsoft Store](https://apps.microsoft.com/detail/9pgjgd53tn86).
-- Python 3.10 or higher
+- **Node.js version**: Node.js 18.0.0 or higher
 - Any MCP-compatible client (GitHub Copilot, Claude Desktop, Cline, Cursor, Windsurf etc.)
 - Configure MCP server in your chosen client
 
@@ -35,16 +35,16 @@ Not a magical auto-fix solution. It's a Python wrapper around CDB that leverages
 > In enterprise environments, MCP server usage might be restricted by organizational policies. Check with your IT team about AI tool usage and ensure you have the necessary permissions before proceeding.
 
 ### Installation
+
 ```bash
-pip install mcp-windbg
+cd mcp-windbg
+npm install
+npm run build
 ```
 
+### Configuration
 
-## Configuration for Visual Studio Code
-
-To make MCP servers available in all your workspaces, use the global user configuration:
-
-1. Press `F1`, type `>` and select **MCP: Open User Configuration**.
+1. Press **F1** in VS Code and select **MCP: Open User Configuration**.
 2. Paste the following JSON snippet into your user configuration:
 
 ```json
@@ -52,8 +52,8 @@ To make MCP servers available in all your workspaces, use the global user config
     "servers": {
         "mcp_windbg": {
             "type": "stdio",
-            "command": "python",
-            "args": ["-m", "mcp_windbg"],
+            "command": "node",
+            "args": ["C:\\path\\to\\mcp-windbg\\build\\index.js"],
             "env": {
                 "_NT_SYMBOL_PATH": "SRV*C:\\Symbols*https://msdl.microsoft.com/download/symbols"
             }
@@ -101,7 +101,7 @@ The beauty of MCP is that you write the server once, and it works everywhere. Ch
 | Topic | Description |
 |-------|-------------|
 | **[Getting Started](https://github.com/svnscha/mcp-windbg/wiki/Getting-Started)** | Quick setup and first steps |
-| **[Installation](https://github.com/svnscha/mcp-windbg/wiki/Installation)** | Detailed installation for pip, MCP registry, and from source |
+| **[Installation](https://github.com/svnscha/mcp-windbg/wiki/Installation)** | Detailed installation for MCP registry, and from source |
 | **[Usage](https://github.com/svnscha/mcp-windbg/wiki/Usage)** | MCP client integration, command-line usage, and workflows |
 | **[Tools Reference](https://github.com/svnscha/mcp-windbg/wiki/Tools)** | Complete API reference and examples |
 | **[Troubleshooting](https://github.com/svnscha/mcp-windbg/wiki/Troubleshooting)** | Common issues and solutions |
@@ -123,7 +123,6 @@ The beauty of MCP is that you write the server once, and it works everywhere. Ch
 > "Check for timing issues in the thread pool with !runaway and !threads"
 
 > "Show me all threads with ~*k and identify which one is causing the hang"
-
 ### Time Travel Debugging
 
 > "Record a TTD trace of myapp.exe and analyze any exceptions"

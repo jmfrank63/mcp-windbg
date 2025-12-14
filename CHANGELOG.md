@@ -48,13 +48,13 @@ This release focuses on making mcp-windbg more reliable, faster, and easier to u
 - Microsoft Store WinDbg CDB compatibility
 
 **Devops**
-- Set up continuous integration that automatically tests the code with Python versions 3.10 through 3.14
+- Set up continuous integration that automatically tests the code
 - Added automatic dependency updates to keep everything secure and up-to-date
 - Streamlined the release process so new versions reach users faster
 
 **Development**
-- Switched to `uv` - a lightning-fast Python package manager that's 10-100x faster than pip
-- Development setup is now much quicker with commands like `uv sync` and `uv run`
+- Switched to npm for package management
+- Development setup is now much quicker with commands like `npm install` and `npm run build`
 - More reliable builds with locked dependency versions
 
 **Documentation**

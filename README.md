@@ -20,6 +20,7 @@ Not a magical auto-fix solution. It's a Python wrapper around CDB that leverages
 
 - **Crash Dump Analysis**: Examine Windows crash dumps
 - **Live Debugging**: Connect to remote debugging targets
+- **Time Travel Debugging**: Record and replay execution traces
 - **Directory Analysis**: Process multiple dumps for patterns
 
 ## Quick Start
@@ -87,6 +88,11 @@ The beauty of MCP is that you write the server once, and it works everywhere. Ch
 | [`open_windbg_remote`](https://github.com/svnscha/mcp-windbg/wiki/Tools#open_windbg_remote) | Connect to remote debugging | Live debugging sessions |
 | [`close_windbg_remote`](https://github.com/svnscha/mcp-windbg/wiki/Tools#close_windbg_remote) | Cleanup remote sessions | Resource management |
 | [`run_windbg_cmd`](https://github.com/svnscha/mcp-windbg/wiki/Tools#run_windbg_cmd) | Execute WinDbg commands | Custom analysis and investigation |
+| [`record_ttd_trace`](https://github.com/svnscha/mcp-windbg/wiki/Tools#record_ttd_trace) | Record TTD traces | Capture execution for analysis |
+| [`attach_ttd_trace`](https://github.com/svnscha/mcp-windbg/wiki/Tools#attach_ttd_trace) | Attach TTD to process | Record running processes |
+| [`open_ttd_trace`](https://github.com/svnscha/mcp-windbg/wiki/Tools#open_ttd_trace) | Open TTD trace files | Time travel debugging |
+| [`close_ttd_trace`](https://github.com/svnscha/mcp-windbg/wiki/Tools#close_ttd_trace) | Cleanup TTD sessions | Resource management |
+| [`list_ttd_traces`](https://github.com/svnscha/mcp-windbg/wiki/Tools#list_ttd_traces) | List TTD trace files | Discovery of recorded traces |
 
 ## Documentation
 
@@ -117,6 +123,18 @@ The beauty of MCP is that you write the server once, and it works everywhere. Ch
 > "Check for timing issues in the thread pool with !runaway and !threads"
 
 > "Show me all threads with ~*k and identify which one is causing the hang"
+
+### Time Travel Debugging
+
+> "Record a TTD trace of myapp.exe and analyze any exceptions"
+
+> "List TTD traces in C:\\traces and open the most recent one"
+
+> "Navigate to position 2A:15F and show me the call stack"
+
+> "Find all calls to kernel32!CreateFileW in this trace"
+
+> "Show me when address 0x12345678 was written to"
 
 ## Blog
 

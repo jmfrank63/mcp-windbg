@@ -5,6 +5,35 @@ All notable changes to the MCP Server for WinDbg Crash Analysis project will be 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2025-12-14
+
+**What's New in This Release**
+
+This release adds comprehensive Time Travel Debugging (TTD) support, enabling powerful record-and-replay debugging capabilities.
+
+### New Features
+
+**Time Travel Debugging Support**
+- `record_ttd_trace` - Record TTD traces by launching new processes
+- `attach_ttd_trace` - Attach TTD to running processes and record traces
+- `open_ttd_trace` - Open and analyze TTD trace files (.run)
+- `close_ttd_trace` - Close TTD sessions and release resources
+- `list_ttd_traces` - Discover available TTD trace files in directories
+- Support for ring buffer mode for long-running processes
+- Automatic exception detection in traces
+- TTD position navigation and querying capabilities
+
+**Enhanced Documentation**
+- Added TTD analysis guidelines to `AGENTS.md`
+- Updated `README.md` with TTD examples and workflows
+- Added TTD best practices and command examples
+
+### Improvements
+
+**TTD Integration**: Seamless integration with TTD.exe command-line utility
+**Debugging Flexibility**: Record traces for later analysis or analyze existing traces
+**Time Travel**: Navigate forwards and backwards through execution traces
+
 ## [0.10.0] - 2025-10-10
 
 **What's New in This Release**

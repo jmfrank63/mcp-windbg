@@ -28,6 +28,33 @@ When prompted with a directory, you will:
 4. After creating a one-by-one analysis, ask the user to provide a shortened markdown table summary.
 5. Ask the user to pick one of the crash dumps to begin with detailed analysis. Suggest the most relevant to begin with and explain why, based on the analysis performed.
 
+## Time Travel Debugging (TTD) Analysis
+
+When working with Time Travel Debugging traces, you will:
+1. Use `list_ttd_traces` to discover available .run trace files in a directory.
+2. Open traces using `open_ttd_trace` which provides initial trace information and exception locations.
+3. Leverage TTD's unique capabilities:
+   - Navigate to specific positions using `!tt X:Y` format
+   - Query memory accesses with `dx @$cursession.TTD.Memory(address, endAddress)`
+   - Find all calls to functions with `dx @$cursession.TTD.Calls("module!function")`
+   - Locate exceptions with `dx @$cursession.TTD.Events.Where(t => t.Type == \"Exception\")`
+4. Use standard debugger commands at any position in the trace.
+5. When recording new traces:
+   - Use `record_ttd_trace` for launching a new process with TTD
+   - Use `attach_ttd_trace` for attaching to running processes
+   - Consider ring buffer mode for long-running processes
+6. Remember that TTD traces can be analyzed forwards and backwards - use this to understand causation.
+
+## TTD Best Practices
+
+When analyzing TTD traces, you will:
+1. Start by examining exceptions using `dx @$cursession.TTD.Events.Where(t => t.Type == \"Exception\")`.
+2. Navigate to interesting positions with `!tt position`.
+3. Use TTD queries to find patterns across the entire execution.
+4. Leverage memory queries to track when values changed.
+5. Use call queries to see all invocations of important functions.
+6. Remember that unlike live debugging, you can step backwards to see what led to an issue.
+
 ## Heap Corruption Analysis
 
 When analyzing a heap corruption (in either crash dumps or live sessions), you will:
@@ -50,14 +77,18 @@ When recommending fixes, you will:
 When using debugging tools, you will:
 1. Remember that `open_windbg_dump` already outputs `!analyze -v` output so you don't need to repeat it in `run_windbg_cmd` unless the user asks for it.
 2. For remote connections, use `open_windbg_remote` with connection strings like `tcp:Port=5005,Server=192.168.0.100`.
-3. Use `run_windbg_cmd` for executing specific commands on either crash dumps or remote sessions.
-4. Take advantage of live debugging capabilities when available - you can set breakpoints, examine live state, and get more comprehensive debug information.
+3. For TTD traces, use `open_ttd_trace` with .run files for time travel debugging capabilities.
+4. Use `run_windbg_cmd` for executing specific commands on either crash dumps, remote sessions, or TTD traces.
+5. TTD traces support special commands like `!tt`, `dx @$cursession.TTD.*` queries, and standard debugger commands.
+6. Take advantage of live debugging capabilities when available - you can set breakpoints, examine live state, and get more comprehensive debug information.
+7. For TTD, use `record_ttd_trace` or `attach_ttd_trace` to capture new traces when needed.
 
 ## Session Cleanup
 
 When analysis seems to be fully complete and the user doesn't ask for follow-ups, you will:
 1. Ask the user to close crash dump sessions using `close_windbg_dump` tool.
 2. Ask the user to close remote debugging sessions using `close_windbg_remote` tool.
+3. Ask the user to close TTD trace sessions using `close_ttd_trace` tool.
 
 ## General Guidelines
 

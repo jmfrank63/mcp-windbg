@@ -96,6 +96,44 @@ class ListWindbgDumpsParams(BaseModel):
     )
 
 
+class RecordTTDTraceParams(BaseModel):
+    """Parameters for recording a TTD trace."""
+    executable_path: str = Field(description="Path to the executable to record")
+    arguments: Optional[str] = Field(default=None, description="Command-line arguments for the executable")
+    output_directory: Optional[str] = Field(default=None, description="Output directory for trace files")
+    ring_buffer: bool = Field(default=False, description="Use ring buffer mode")
+    max_file_size: Optional[int] = Field(default=None, description="Maximum trace file size in MB (ring buffer mode)")
+    include_children: bool = Field(default=False, description="Record child processes")
+
+
+class AttachTTDTraceParams(BaseModel):
+    """Parameters for attaching TTD to a running process."""
+    process_id: int = Field(description="Process ID to attach to")
+    output_directory: Optional[str] = Field(default=None, description="Output directory for trace files")
+    ring_buffer: bool = Field(default=False, description="Use ring buffer mode")
+    max_file_size: Optional[int] = Field(default=None, description="Maximum trace file size in MB (ring buffer mode)")
+    include_children: bool = Field(default=False, description="Record child processes")
+
+
+class OpenTTDTraceParams(BaseModel):
+    """Parameters for opening a TTD trace file."""
+    trace_path: str = Field(description="Path to the TTD trace file (.run)")
+    include_position_info: bool = Field(default=True, description="Include current position information")
+    include_threads: bool = Field(default=False, description="Include thread information")
+    include_modules: bool = Field(default=False, description="Include module information")
+
+
+class CloseTTDTraceParams(BaseModel):
+    """Parameters for closing a TTD trace."""
+    trace_path: str = Field(description="Path to the TTD trace file to close")
+
+
+class ListTTDTracesParams(BaseModel):
+    """Parameters for listing TTD trace files."""
+    directory_path: Optional[str] = Field(default=None, description="Directory to search for .run files")
+    recursive: bool = Field(default=False, description="Search recursively in subdirectories")
+
+
 def get_or_create_session(
     dump_path: Optional[str] = None,
     connection_string: Optional[str] = None,
@@ -246,6 +284,46 @@ async def serve(
                 This tool helps you discover available crash dumps that can be analyzed.
                 """,
                 inputSchema=ListWindbgDumpsParams.model_json_schema(),
+            ),
+            Tool(
+                name="record_ttd_trace",
+                description="""
+                Record a Time Travel Debugging (TTD) trace by launching a new process.
+                Creates a .run trace file that can be replayed for analysis.
+                """,
+                inputSchema=RecordTTDTraceParams.model_json_schema(),
+            ),
+            Tool(
+                name="attach_ttd_trace",
+                description="""
+                Attach TTD to a running process and record a trace.
+                Useful for capturing traces of already-running applications.
+                """,
+                inputSchema=AttachTTDTraceParams.model_json_schema(),
+            ),
+            Tool(
+                name="open_ttd_trace",
+                description="""
+                Open and analyze a TTD trace file (.run).
+                Provides time travel debugging capabilities for recorded execution.
+                """,
+                inputSchema=OpenTTDTraceParams.model_json_schema(),
+            ),
+            Tool(
+                name="close_ttd_trace",
+                description="""
+                Close a TTD trace and release resources.
+                Use this when done analyzing a trace file.
+                """,
+                inputSchema=CloseTTDTraceParams.model_json_schema(),
+            ),
+            Tool(
+                name="list_ttd_traces",
+                description="""
+                List TTD trace files (.run) in a directory.
+                Helps discover available traces for analysis.
+                """,
+                inputSchema=ListTTDTracesParams.model_json_schema(),
             )
         ]
 
@@ -431,6 +509,226 @@ async def serve(
 
                     result_text += f"{i+1}. {dump_file} ({size_mb} MB)\n"
 
+                return [TextContent(
+                    type="text",
+                    text=result_text
+                )]
+
+            elif name == "record_ttd_trace":
+                args = RecordTTDTraceParams(**arguments)
+                
+                # Import subprocess at the top if not already imported
+                import subprocess
+                import time
+                
+                # Build TTD command
+                cmd = ["ttd.exe", "-accepteula"]
+                
+                if args.output_directory:
+                    cmd.extend(["-out", args.output_directory])
+                
+                if args.ring_buffer:
+                    cmd.append("-ring")
+                    if args.max_file_size:
+                        cmd.extend(["-maxFile", str(args.max_file_size)])
+                
+                if args.include_children:
+                    cmd.append("-children")
+                
+                # Add the executable and arguments
+                cmd.append(args.executable_path)
+                if args.arguments:
+                    cmd.extend(args.arguments.split())
+                
+                try:
+                    # Start TTD recording process
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        timeout=300  # 5 minute timeout
+                    )
+                    
+                    output = result.stdout + result.stderr
+                    
+                    # Try to find the trace file path in the output
+                    trace_path = None
+                    for line in output.split('\n'):
+                        if '.run' in line:
+                            trace_path = line.strip()
+                            break
+                    
+                    result_text = f"TTD recording completed.\n\nCommand: {' '.join(cmd)}\n\nOutput:\n{output}"
+                    if trace_path:
+                        result_text += f"\n\nTrace file: {trace_path}"
+                    
+                    return [TextContent(type="text", text=result_text)]
+                    
+                except subprocess.TimeoutExpired:
+                    return [TextContent(
+                        type="text",
+                        text=f"TTD recording timed out after 5 minutes. The process may still be recording.\nCommand: {' '.join(cmd)}"
+                    )]
+                except FileNotFoundError:
+                    return [TextContent(
+                        type="text",
+                        text="TTD.exe not found. Please ensure Time Travel Debugging is installed.\nDownload from: https://aka.ms/ttd/download"
+                    )]
+                except Exception as e:
+                    return [TextContent(
+                        type="text",
+                        text=f"Failed to record TTD trace: {str(e)}\nCommand: {' '.join(cmd)}"
+                    )]
+
+            elif name == "attach_ttd_trace":
+                args = AttachTTDTraceParams(**arguments)
+                
+                import subprocess
+                
+                # Build TTD command for attach
+                cmd = ["ttd.exe", "-accepteula", "-attach", str(args.process_id)]
+                
+                if args.output_directory:
+                    cmd.extend(["-out", args.output_directory])
+                
+                if args.ring_buffer:
+                    cmd.append("-ring")
+                    if args.max_file_size:
+                        cmd.extend(["-maxFile", str(args.max_file_size)])
+                
+                if args.include_children:
+                    cmd.append("-children")
+                
+                try:
+                    # Start TTD in background (non-blocking for attach mode)
+                    process = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True
+                    )
+                    
+                    # Give it a moment to attach
+                    import time
+                    time.sleep(2)
+                    
+                    if process.poll() is not None:
+                        # Process ended, read output
+                        output = process.stdout.read()
+                        return [TextContent(
+                            type="text",
+                            text=f"TTD attach failed or completed immediately.\n\nCommand: {' '.join(cmd)}\n\nOutput:\n{output}"
+                        )]
+                    
+                    return [TextContent(
+                        type="text",
+                        text=f"TTD successfully attached to process {args.process_id}.\n\nRecording in progress. Stop the target process to complete the trace.\n\nCommand: {' '.join(cmd)}"
+                    )]
+                    
+                except FileNotFoundError:
+                    return [TextContent(
+                        type="text",
+                        text="TTD.exe not found. Please ensure Time Travel Debugging is installed.\nDownload from: https://aka.ms/ttd/download"
+                    )]
+                except Exception as e:
+                    return [TextContent(
+                        type="text",
+                        text=f"Failed to attach TTD: {str(e)}\nCommand: {' '.join(cmd)}"
+                    )]
+
+            elif name == "open_ttd_trace":
+                args = OpenTTDTraceParams(**arguments)
+                
+                if not os.path.isfile(args.trace_path):
+                    raise McpError(ErrorData(
+                        code=INVALID_PARAMS,
+                        message=f"TTD trace file not found: {args.trace_path}"
+                    ))
+                
+                # Open TTD trace using CDB
+                session = get_or_create_session(
+                    dump_path=args.trace_path,
+                    cdb_path=cdb_path,
+                    symbols_path=symbols_path,
+                    timeout=timeout,
+                    verbose=verbose
+                )
+                
+                results = []
+                
+                # TTD-specific information
+                results.append("### TTD Trace Information\n")
+                
+                if args.include_position_info:
+                    # Get current position
+                    position = session.send_command("!tt")
+                    results.append("#### Current Position\n```\n" + "\n".join(position) + "\n```\n\n")
+                    
+                    # Get position range
+                    position_range = session.send_command("!tt 0")
+                    results.append("#### Position Range\n```\n" + "\n".join(position_range) + "\n```\n\n")
+                
+                # Get exceptions in trace
+                exceptions = session.send_command('dx @$cursession.TTD.Events.Where(t => t.Type == "Exception")')
+                results.append("#### Exceptions in Trace\n```\n" + "\n".join(exceptions) + "\n```\n\n")
+                
+                if args.include_threads:
+                    threads = session.send_command("~")
+                    results.append("#### Threads\n```\n" + "\n".join(threads) + "\n```\n\n")
+                
+                if args.include_modules:
+                    modules = session.send_command("lm")
+                    results.append("#### Loaded Modules\n```\n" + "\n".join(modules) + "\n```\n\n")
+                
+                return [TextContent(type="text", text="".join(results))]
+
+            elif name == "close_ttd_trace":
+                args = CloseTTDTraceParams(**arguments)
+                success = unload_session(dump_path=args.trace_path)
+                if success:
+                    return [TextContent(
+                        type="text",
+                        text=f"Successfully closed TTD trace: {args.trace_path}"
+                    )]
+                else:
+                    return [TextContent(
+                        type="text",
+                        text=f"No active session found for TTD trace: {args.trace_path}"
+                    )]
+
+            elif name == "list_ttd_traces":
+                args = ListTTDTracesParams(**arguments)
+                
+                if args.directory_path is None:
+                    # Use current directory if not specified
+                    args.directory_path = os.getcwd()
+                
+                if not os.path.exists(args.directory_path) or not os.path.isdir(args.directory_path):
+                    raise McpError(ErrorData(
+                        code=INVALID_PARAMS,
+                        message=f"Directory not found: {args.directory_path}"
+                    ))
+                
+                # Search for .run files
+                search_pattern = os.path.join(args.directory_path, "**", "*.run") if args.recursive else os.path.join(args.directory_path, "*.run")
+                trace_files = glob.glob(search_pattern, recursive=args.recursive)
+                trace_files.sort()
+                
+                if not trace_files:
+                    return [TextContent(
+                        type="text",
+                        text=f"No TTD trace files (*.run) found in {args.directory_path}"
+                    )]
+                
+                result_text = f"Found {len(trace_files)} TTD trace file(s) in {args.directory_path}:\n\n"
+                for i, trace_file in enumerate(trace_files):
+                    try:
+                        size_mb = round(os.path.getsize(trace_file) / (1024 * 1024), 2)
+                    except (OSError, IOError):
+                        size_mb = "unknown"
+                    
+                    result_text += f"{i+1}. {trace_file} ({size_mb} MB)\n"
+                
                 return [TextContent(
                     type="text",
                     text=result_text

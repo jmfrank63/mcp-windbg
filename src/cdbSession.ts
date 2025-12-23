@@ -13,16 +13,17 @@ const COMMAND_MARKER_PATTERN = /COMMAND_COMPLETED_MARKER/;
  * Default paths where cdb.exe might be located
  */
 const DEFAULT_CDB_PATHS = [
+  // Microsoft Store WinDbg Preview locations (check first)
+  `${process.env.LOCALAPPDATA}\\Microsoft\\WindowsApps\\cdbX64.exe`,
+  `${process.env.LOCALAPPDATA}\\Microsoft\\WindowsApps\\cdbX86.exe`,
+  `${process.env.LOCALAPPDATA}\\Microsoft\\WindowsApps\\cdbARM64.exe`,
+  `${process.env.LOCALAPPDATA}\\Microsoft\\WindowsApps\\cdb.exe`,
+  
   // Traditional Windows SDK locations
   'C:\\Program Files (x86)\\Windows Kits\\10\\Debuggers\\x64\\cdb.exe',
   'C:\\Program Files (x86)\\Windows Kits\\10\\Debuggers\\x86\\cdb.exe',
   'C:\\Program Files\\Debugging Tools for Windows (x64)\\cdb.exe',
   'C:\\Program Files\\Debugging Tools for Windows (x86)\\cdb.exe',
-  
-  // Microsoft Store WinDbg Preview locations
-  `${process.env.LOCALAPPDATA}\\Microsoft\\WindowsApps\\cdbX64.exe`,
-  `${process.env.LOCALAPPDATA}\\Microsoft\\WindowsApps\\cdbX86.exe`,
-  `${process.env.LOCALAPPDATA}\\Microsoft\\WindowsApps\\cdbARM64.exe`,
 ];
 
 /**
@@ -171,6 +172,38 @@ export class CDBSession extends EventEmitter {
   private findCdbExecutable(customPath?: string): string {
     if (customPath && existsSync(customPath)) {
       return customPath;
+    }
+
+    // Check environment variable first
+    if (process.env.CDB_PATH) {
+      // Don't check existsSync for App Execution Aliases, just return the path
+      return process.env.CDB_PATH;
+    }
+
+    // Try using 'where' command on Windows to find cdb executables in PATH
+    if (process.platform === 'win32') {
+      try {
+        const { execSync } = require('child_process');
+        // Try multiple possible executable names
+        for (const exeName of ['cdbX64.exe', 'cdb.exe', 'cdbX86.exe', 'cdbARM64.exe']) {
+          try {
+            const output = execSync(`where ${exeName}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
+            const paths = output.trim().split('\n');
+            if (paths.length > 0 && paths[0]) {
+              const foundPath = paths[0].trim();
+              if (foundPath) {
+                // Return the executable name directly since spawn can find it in PATH
+                // This works even for App Execution Aliases
+                return exeName;
+              }
+            }
+          } catch {
+            // Continue to next executable name
+          }
+        }
+      } catch {
+        // Fall through to check default paths
+      }
     }
 
     for (const path of DEFAULT_CDB_PATHS) {

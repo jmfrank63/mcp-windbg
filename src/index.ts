@@ -309,6 +309,11 @@ This tool allows you to run any WinDbg command and get the output.
                 type: 'string',
                 description: 'WinDbg command to execute',
               },
+              timeout_seconds: {
+                type: 'number',
+                description: 'Timeout in seconds for the command (default: 30)',
+                default: 30,
+              },
             },
             required: ['command'],
           },
@@ -641,14 +646,16 @@ Helps discover available traces for analysis.
 
       // Tool: run_windbg_cmd
       if (name === 'run_windbg_cmd') {
-        const { dump_path, connection_string, command } = args as {
+        const { dump_path, connection_string, command, timeout_seconds } = args as {
           dump_path?: string;
           connection_string?: string;
           command: string;
+          timeout_seconds?: number;
         };
 
         const session = await getOrCreateSession(dump_path, connection_string);
-        const output = await session.sendCommand(command);
+        const timeoutMs = (timeout_seconds ?? 30) * 1000;
+        const output = await session.sendCommand(command, timeoutMs);
 
         return {
           content: [

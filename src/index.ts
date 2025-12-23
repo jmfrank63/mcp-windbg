@@ -252,6 +252,11 @@ This tool executes common WinDbg commands to analyze the crash dump and returns 
                 type: 'boolean',
                 description: 'Whether to include thread information',
               },
+              timeout_seconds: {
+                type: 'number',
+                description: 'Timeout in seconds for opening the dump (default: 60)',
+                default: 60,
+              },
             },
             required: ['dump_path', 'include_stack_trace', 'include_modules', 'include_threads'],
           },
@@ -476,6 +481,11 @@ Provides time travel debugging capabilities for recorded execution.
                 description: 'Include module information',
                 default: false,
               },
+              timeout_seconds: {
+                type: 'number',
+                description: 'Timeout in seconds for opening the trace (default: 120 for TTD traces)',
+                default: 120,
+              },
             },
             required: ['trace_path'],
           },
@@ -529,11 +539,12 @@ Helps discover available traces for analysis.
     try {
       // Tool: open_windbg_dump
       if (name === 'open_windbg_dump') {
-        const { dump_path, include_stack_trace, include_modules, include_threads } = args as {
+        const { dump_path, include_stack_trace, include_modules, include_threads, timeout_seconds } = args as {
           dump_path?: string;
           include_stack_trace: boolean;
           include_modules: boolean;
           include_threads: boolean;
+          timeout_seconds?: number;
         };
 
         // Check if dump_path is missing or empty
@@ -571,7 +582,9 @@ Helps discover available traces for analysis.
           };
         }
 
-        const session = await getOrCreateSession(dump_path);
+        const session = await getOrCreateSession(dump_path, undefined, {
+          timeout: timeout_seconds ?? 60,
+        });
         const results: string[] = [];
 
         // Get crash information
@@ -911,18 +924,21 @@ Helps discover available traces for analysis.
 
       // Tool: open_ttd_trace
       if (name === 'open_ttd_trace') {
-        const { trace_path, include_position_info, include_threads, include_modules } = args as {
+        const { trace_path, include_position_info, include_threads, include_modules, timeout_seconds } = args as {
           trace_path: string;
           include_position_info?: boolean;
           include_threads?: boolean;
           include_modules?: boolean;
+          timeout_seconds?: number;
         };
 
         if (!existsSync(trace_path)) {
           throw new McpError(ErrorCode.InvalidParams, `TTD trace file not found: ${trace_path}`);
         }
 
-        const session = await getOrCreateSession(trace_path);
+        const session = await getOrCreateSession(trace_path, undefined, {
+          timeout: timeout_seconds ?? 120,
+        });
         const results: string[] = [];
 
         results.push('### TTD Trace Information\n');
